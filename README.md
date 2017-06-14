@@ -47,6 +47,10 @@ And finally, configure `lager` app with something like this:
   * outputs: `tcp`, `udp`, `file`
   * formats: `json`
   * json encoders: `jsx`, `jiffy`
+  * configurable `timestamp_format`:
+    - `original` - e.g. `"2017-06-14T04:02:22.845"`
+    - `unix_seconds` - e.g. `"1497412942"`
+    - `iso8601` - e.g. `"2017-06-14T04:02:22.845Z"`
 
 ## JSON formatter
 
@@ -59,12 +63,16 @@ Here's how you would use the included JSON formatter with the
   {file, "log/lager_logstash.log"},
   {level, info},
   {formatter, lager_logstash_json_formatter},
-  {formatter_config, [{json_encoder, jsx}]},
+  {formatter_config, [{json_encoder, jsx}, {timestamp_format, iso8601}]},
   {size, 10485760},
   {date, "$D0"},
   {count, 5}
  ]}
 ```
+
+## Configuration options
+
+Some options can be passed to the formatter via lager's `formatter_config` configuration item:
 
 ## TODOs
 

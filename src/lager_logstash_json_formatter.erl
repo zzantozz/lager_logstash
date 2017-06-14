@@ -29,7 +29,8 @@
 format(LagerMsg, Config) ->
     Encoder = value(json_encoder, Config, ?DEFAULT_JSON_FORMATTER),
     Level = lager_msg:severity(LagerMsg),
-    Timestamp = timestamp(lager_msg:datetime(LagerMsg)),
+    TsFormat = value(timestamp_format, Config, original),
+    Timestamp = timestamp(TsFormat, LagerMsg),
     Message = lager_msg:message(LagerMsg),
     Metadata = lager_msg:metadata(LagerMsg),
     Data = [{type, lager_logstash},
@@ -41,13 +42,29 @@ format(LagerMsg, Config) ->
 format(Message, Config, _) ->
     format(Message, Config).
 
+timestamp(original, LagerMsg) ->
+    {Date, Time} = lager_msg:datetime(LagerMsg),
+    [Date, $T, Time];
+timestamp(unix_seconds, LagerMsg) ->
+    {Megas, Secs, _Micros} = lager_msg:timestamp(LagerMsg),
+    integer_to_list(Megas * 1000 * 1000 + Secs);
+timestamp(iso8601, LagerMsg) ->
+    TS = {_Megas, _Secs, Micros} = lager_msg:timestamp(LagerMsg),
+    {{Y, Mo, D}, {H, Mi, S}} = calendar:now_to_universal_time(TS),
+    Millis = Micros div 1000,
+    [integer_to_list(Y), $-, i2l(Mo), $-, i2l(D), $T, i2l(H), $:, i2l(Mi), $:, i2l(S), $., i3l(Millis), $Z].
+
+%% @doc Lifted from lager_util.
+i2l(I) when I < 10  -> [$0, $0+I];
+i2l(I)              -> integer_to_list(I).
+i3l(I) when I < 100 -> [$0 | i2l(I)];
+i3l(I)              -> integer_to_list(I).
+
 value(Name, Config, Default) ->
     case lists:keyfind(Name, 1, Config) of
         {Name, Value} -> Value;
         false         -> Default
     end.
-
-timestamp({Date, Time}) -> [Date, $T, Time].
 
 convert(Data) -> lists:foldl(fun convert/2, [], Data).
 
